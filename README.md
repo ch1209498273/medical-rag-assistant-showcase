@@ -1,384 +1,175 @@
-# 医疗知识问答助手
-
 <div align="center">
-
-**证据约束的医疗知识 RAG 参考实现** —— 让医护培训资料的问答结果**可定位、可拒答、可复现**。
-
-*Medical Knowledge Q&A Assistant — a local-first, evidence-grounded RAG portfolio project.*
-
-![ci](https://github.com/ch1209498273/medical-rag-assistant/actions/workflows/ci.yml/badge.svg)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![Qdrant](https://img.shields.io/badge/Qdrant-Vector-DC382D?logo=qdrant&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-
-| 🎯 多跳证据链确认批 | ✅ 已发布答案值全对 | 🛡️ 内容错误答案发布 | 🟢 CI 连续通过 |
-| :---: | :---: | :---: | :---: |
-| **6/6** | **10/10** | **0 次** | **9 次** |
-| 第七份独立留出 · v2 值匹配口径 | 固定检索集补充批 | 贯穿全部评测批次 | 最新 run 41203488417 |
-
-*以上为私有评测环境的聚合工程口径，不构成医学准确率认证；正式发布未开放（release=not_released）。*
-
+  <img src="https://fastly.jsdelivr.net/gh/ch1209498273/medical-rag-assistant-showcase@6c8d6ea95f89813b205f651789a325958bf2fdca/assets/banner.svg" alt="医疗知识问答助手" width="100%">
+  <br><br>
+  <img src="https://fastly.jsdelivr.net/gh/ch1209498273/medical-rag-assistant-showcase@6c8d6ea95f89813b205f651789a325958bf2fdca/assets/badges.svg" alt="项目状态" width="100%">
 </div>
 
-> **边界提醒：** 这是一个面向本机演示和工程学习的作品集项目。公开 Demo 使用完全虚构的资料，不代表真实医疗制度、医保规则或诊疗建议；它不是公网服务，也不替代专业人员判断。
+<br>
 
-## 30秒了解项目
+## 大多数 RAG 的问题不是答不出来，<br>是答得太像真的。
 
-一个可扩展的医疗知识问答助手。当前 v1.0 聚焦血透机构医护人员的制度与专业知识检索，采用可追溯引用、证据不足拒答和本地知识库存储；患者端和运行时多 Agent 属于 v2.0 路线。
+面向医护培训资料的证据约束问答系统。每一条发出去的答案都必须能指回原文的具体位置；指不回去的，它拒答。
 
-它把 PDF/DOCX 资料变成可定位的 Chunk，经过 Embedding、向量召回、Reranker 和相关性门后，再生成带引用的结构化答案。三期把这条链路推进到**多跳证据链**：证据闭包推导把"先看 A、A 又指向 B"的跨文档规范关联合并为必达清单，重排保留席位保证闭包必需证据不被截断，逐 claim 核验器对合成句做 fail-closed 把关。系统同时提供一个无需 Key、无需网络的确定性 Demo，以及由运行者自备 Key 的显式 Cloud 模式。
+> **本页是项目说明，不包含源代码。** 完整实现与可演示环境可另行提供。这里讲的是三件事：它为什么这样设计、我否掉了哪些方案、以及凭什么说它不会胡说。
 
-30 秒了解项目：它展示的不是"让模型随便回答"，而是如何把资料版本、检索、证据引用、安全拒答、评测回滚和公开数据边界放在同一条可验证工程链路里。
+**我在这个项目里负责什么：** 问题定义与能力边界 → 证据链路设计（召回 / 闭包 / 核验三道闸门）→ 评测口径与准入判断 → 否决三个"指标更好但更危险"的方案。工程实现借助 AI 编程工具完成，**判断与取舍由我负责**。
 
-想快速按"求职能力证据"阅读，请先看[作品集导览](docs/portfolio-brief.md)；它把业务判断、知识工程、RAG 评测、工程交付和研发治理映射到可追问的代码与文档。
+---
 
-二期已完成本机演示范围收口；三期计划和当前评测唯一口径见[三期项目入口](docs/project/phase3/README.md)、[当前版本与评测口径](docs/project/phase3/当前版本与评测口径.md)和[项目总结与求职展示](docs/project/项目总结与求职展示.md)。这些页面只描述可验证的工程事实，真实资料和逐题问答仍留在本机私有目录。
+## 一分钟看懂
 
-技术栈：Python 3.12、FastAPI、Pydantic Settings、SQLite、Qdrant Local（可选 Qdrant Server）、PyMuPDF、python-docx、React 19、TypeScript、Vite、Vitest、DeepSeek 和 SiliconFlow。三期集中服务通过 `QDRANT_URL` 显式启用 Server 模式；未配置时保持 Local 模式，检索和引用载荷契约不变。
+- **它做什么** — 把 PDF/DOCX 培训资料变成可定位的切片，回答问题时给出带出处的答案，证据不足时明确拒答。
+- **我改了什么** — 不是"提高回答率"，而是把"敢答"换成"敢不答"：三道闸门拦在答案出门之前，任何一道不过就整条拒答。
+- **凭什么可信** — 答案先完整缓冲、逐条断言回查证据、引用校验通过才发第一个字；贯穿全部评测批次，**内容错误的答案被发布 0 次**。
+- **我拒绝了什么** — 三次实验把指标做上去了，都没上线：召回率涨了但回答变差、多答 5 题但拒答率从 100% 掉到 60%、多 Agent 架构更漂亮但正式回答从 21/30 掉到 9/30。
+- **现在到哪一步** — 完整链路可演示，80 题冻结评测集 + 9 份独立留出批已跑完，双运行模式（离线确定性 Demo / 自备 Key 的 Cloud）。
 
-## 界面预览
+---
 
-<div align="center">
+## 01 · 问题：医疗问答的失败长什么样
 
-下面的素材均来自本机 Demo 的虚构资料和固定演示流程；原图尺寸、哈希和审核状态见[媒体清单](docs/assets/manifest.json)。它们用于作品集演示，不代表生产就绪、真实医疗制度或运行时多 Agent。
+一份制度文件里写着"新员工独立值班前需完成 24 学时岗前培训"。模型完全可能答成"需完成 40 学时"——格式完美、语气笃定、一个出处都没有。在医院场景，这种答案比"我不知道"危险得多。
 
-**有引用的正式答案**
+更隐蔽的一种是**半对**：答案的前半段有依据，后半段模型自己补了一句。用户看不出分界线在哪里，于是整段都信了。
 
-![有引用的正式答案](docs/assets/chat-answer.png)
+所以这个项目的问题定义不是"把回答率做上去"，而是<strong>发出去的每一句都得指得回原文；指不回去的，必须拒答。</strong>
 
-**证据不足拒答**
+这个约束一旦成立，后面所有设计都是它的推论。
 
-![证据不足拒答](docs/assets/chat-refusal.png)
+---
 
-**历史会话恢复 与 资料管理**
+## 02 · 产品决策：三次指标涨了，我选择不上线
 
-![历史会话恢复](docs/assets/chat-history.png)
+<img src="https://fastly.jsdelivr.net/gh/ch1209498273/medical-rag-assistant-showcase@6c8d6ea95f89813b205f651789a325958bf2fdca/assets/decisions.svg" alt="三次未上线的实验" width="100%">
 
-![资料管理](docs/assets/documents.png)
+产品能力不在上了什么，在敢拦下什么。下面三次实验，指标都变好了，但都停在了实验分支上。
 
-**无 Key 演示模式 与 问题流转**
+**① 混合检索：召回率涨了 12%，我没上线。**
 
-![无 Key 演示模式](docs/assets/runtime-mode.png)
+向量召回叠加词法检索做 RRF 融合，Recall@20 从 0.607 涨到 0.679。但同一轮里：回答可用率从 72.5% 掉到 68.75%，引用有效率从 77.5% 掉到 76.25%，时延从 2.00s 涨到 2.28s。
 
-![问题流转短 GIF](docs/assets/question-flow.gif)
+**依据**：召回更多不等于回答更好。多捞回来的东西里有噪声，重排压不住，最后进了生成环节。**单一指标的提升如果伴随端到端下降，它不是提升，是把问题往下游推。** 保留为实验，正式路径不切换。
 
-</div>
+**② 放宽提示词：多答了 5 题，我回滚了。**
 
-运行 Demo 后可以看到：
+30 题里正式回答从 9 题涨到 14 题，看起来很划算。代价是无答案问题的拒答率从 100% 掉到 60%——等于用"敢编"换"多答"。
 
-- 左侧"制度问答"和"资料管理"导航，以及持续显示的"无 Key 演示模式"标识；
-- 问答页的检索、重排、生成、引用核验状态；
-- 正式答案、可展开引用、证据不足拒答、历史会话恢复和反馈按钮；
-- 资料管理页返回安全的文件名、版本状态和失败原因，不返回本机路径或原文数据库。
+**依据**：医疗场景不接受这个交换。**一个会为不存在的规定编出答案的系统，多答的每一题都在增加风险，而不是价值。** 提示词回滚到原版本。
 
-## 快速体验
+**③ 多 Agent 工作流：架构更漂亮，我默认关闭了。**
 
-### Windows 一键 Demo
+基线方案在 30 题里形成 21 个正式回答，多 Agent 方案只有 9 个——16 题卡在结构校验，172 次物理调用换来了更少的答案。
 
-在项目根目录执行。首次运行需要 Python 3.12、Node.js/npm 和一个本地 Python 虚拟环境：
+**依据**：环节越多，失败点越多。在没有证明它能带来更好答案之前，增加复杂度就是增加故障面。保留为开发期实验，并加了显式回退，不进运行时。
 
-```powershell
-py -3.12 -m venv backend\.venv
-backend\.venv\Scripts\python.exe -m pip install -e ".\backend[dev]"
-Set-Location frontend
-npm ci
-Set-Location ..
-powershell -ExecutionPolicy Bypass -File scripts\start_demo.ps1
-```
+**④ 还有一次反向决策：答案先缓冲，不做流式打字机。**
 
-然后打开 `http://127.0.0.1:5173`。推荐按这个顺序体验：
+流式输出体验更好，但它意味着用户在引用校验之前就看到了内容。我改成把整条答案在内存里缓冲完、逐条断言核验通过、引用校验通过，才发出第一个字。
 
-1. 问"新员工独立值班前需要完成多少学时岗前培训？"并展开引用；
-2. 在同一个会话中问"那没通过怎么办？"，观察追问改写和 7 日补训答案；
-3. 问"血液透析费用报销比例是多少？"，确认系统拒答且不展示伪造引用；
-4. 打开"资料管理"，查看四份虚构资料的索引状态。
+**依据**：**用户永远不该看到"尚未验证"的答案。** 牺牲的是几十毫秒的观感，换来的是"屏幕上的每一句都有依据"这个可以被验证的承诺。
 
-停止本机进程：
+---
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\stop_local.ps1
-```
+## 03 · 一条答案的旅程：三道闸门
 
-无网络 Demo 冒烟（在不启动浏览器的情况下验证完整后端链路）：
+<img src="https://fastly.jsdelivr.net/gh/ch1209498273/medical-rag-assistant-showcase@6c8d6ea95f89813b205f651789a325958bf2fdca/assets/pipeline.svg" alt="一条答案的旅程与三道闸门" width="100%">
 
-```powershell
-backend\.venv\Scripts\python.exe scripts\demo_smoke.py --no-network
-```
+从资料进来到答案出门，有六个环节、三道闸门。任何一道不过，整条拒答，返回固定 reason code——**不拼凑、不降级成猜测、不返回"部分正确"的半成品**。
 
-### Harness native real-local 本机验证
+---
 
-完整操作路径、任务恢复、原流程回退和当前验收边界见[Harness 本机使用指南](docs/project/phase3/harness-migration-operator-guide-20261023.md)。当前整体迁移验收尚未完成。
+## 04 · 三道闸门怎么守
 
-该入口只在现有 `data/runtime/real-local/harness-native.json` 显式存在时启用 Harness 原生工作流；没有该标记或传入 `-Baseline` 时保留基线工作流。真实历史继续由原 SQL 管理。
+**闸门① 相关性门：先承认"资料里可能真的没有"。**
 
-检查已准备的隔离环境（不安装、不联网）：
+召回后去重、重排到最多 6 条，最高分不足 0.35 就直接拒答。这一条拦住的是最常见的幻觉来源——用户问的是资料范围之外的问题，模型却总能顺着上下文编一个。
 
-```powershell
-.\scripts\prepare_harness_native_env.ps1 -VerifyOnly
-```
+**闸门② 证据闭包 + 充分性：跨文档的必达清单。**
 
-首次准备或按锁文件修复环境：
+真正难的问答往往不是单文档能答完的。比如规范 A 写"独立值班需完成岗前培训"，而学时数写在它引用的《培训管理办法》B 里。只召回 A，答案就会缺 B 的部分，或者干脆用模型自己的常识补齐。
 
-```powershell
-.\scripts\prepare_harness_native_env.ps1
-```
+做法是把"指向型引用"展开成一张必达清单：A 指向 B，B 就是闭包里的必需项；缺任何一项，拒答。同时解决两个细节问题：
 
-环境准备使用 `backend/requirements-harness-native.lock` 中的精确包版本，不覆盖或删除已有环境。随后使用项目现有 real-local 启动入口：
+- **重排保留席位**：闭环必需的证据被 top-6 挤出去时，按最低分替换回场，避免首跳的噪声把链尾吃掉；
+- **充分性门**：只剩纯导航句（"详见第 X 章"）不算覆盖到主题，一样按证据不足处理。
 
-```powershell
-.\scripts\start_real_local.ps1
-```
+**闸门③ 逐 claim 核验：把答案拆开，一条一条查。**
 
-需要显式运行原基线工作流时使用 `.\scripts\start_real_local.ps1 -Baseline`。启动前预检会逐项核对完整 Harness 依赖锁。
+答案不是整体判断对错，而是拆成若干断言，每条回查证据。合成句、跨文档拼接的引用单独指引。失败按固定类别归因（超时 / 结构非法 / 无支撑 / 覆盖不足），进入私有观测。
 
-### macOS/Linux 手动启动 Demo
+**依据**：只校验整条答案"看起来有没有引用"，挡不住"前半段有依据、后半段自己编"这种最危险的形态。**必须细到句子。**
 
-先在项目根目录一次性安装依赖：
+---
 
-```bash
-python3.12 -m venv backend/.venv
-backend/.venv/bin/python -m pip install -e './backend[dev]'
-(cd frontend && npm ci)
-```
+## 05 · 运行形态：两种模式，一条链路
 
-然后打开两个终端，均从项目根目录开始。终端 1 保持运行后，再在终端 2 启动前端：
+<img src="https://fastly.jsdelivr.net/gh/ch1209498273/medical-rag-assistant-showcase@6c8d6ea95f89813b205f651789a325958bf2fdca/assets/architecture.svg" alt="双运行模式与系统架构" width="100%">
 
-终端 1 — Demo backend：
+同一个问答链路，两种跑法：
 
-```bash
-cd backend
-APP_RUNTIME_MODE=demo \
-SOURCE_DOCUMENTS_DIR=../demo/documents \
-DEMO_QUESTIONS_PATH=../demo/questions.json \
-PRIVATE_DATA_DIR=../data/runtime/demo/private \
-QDRANT_PATH=../data/runtime/demo/qdrant \
-SQLITE_PATH=../data/runtime/demo/app.sqlite3 \
-HOST=127.0.0.1 PORT=8000 \
-.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
+- **Demo 模式** — 零网络、无需 Key、输出确定性。同样的输入永远给同样的结果，用于复现、演示和回归。
+- **Cloud 模式** — 接 DeepSeek 与 SiliconFlow，运行者自备 Key，只从本机 `.env` 读取。
 
-终端 2 — Demo frontend：
+关键设计是**切换必须显式**：缺 Key 时在启动前就失败，绝不静默回退到 Demo，也不自动切到别的账号或收费模型。前端没有 Key 输入框，health 接口只返回 `configured` / `missing` 这类状态，错误和事件流只给固定 reason code，不泄漏任何配置。
 
-```bash
-cd frontend
-npm run dev -- --host 127.0.0.1 --port 5173
-```
+**依据**：一个会"偷偷换个后端继续跑"的系统，你永远不知道屏幕上那句话是谁生成的。**可复现性优先于便利性。**
 
-两个进程都只绑定本机地址；分别在两个终端使用 `Ctrl+C` 停止。无浏览器冒烟仍可在项目根目录运行 `backend/.venv/bin/python scripts/demo_smoke.py --no-network`。
+---
 
-### 自备 Key 的 Cloud 模式
+## 06 · 评测：怎么证明它不会胡说
 
-Cloud 是显式选择，不是 Demo 的隐式回退：
+<img src="https://fastly.jsdelivr.net/gh/ch1209498273/medical-rag-assistant-showcase@6c8d6ea95f89813b205f651789a325958bf2fdca/assets/metrics.svg" alt="评测结果" width="100%">
 
-1. 复制 `.env.example` 为本机 `.env`；
-2. 将 `APP_RUNTIME_MODE` 改为 `cloud`，只填入运行者自己的 DeepSeek 和 SiliconFlow Key；
-3. 使用 `scripts\start_cloud.ps1`（Windows）或从 `backend` 目录手动启动；
-4. 看到 `deepseek=configured` 和 `siliconflow=configured` 后，才会启动正式 Cloud Provider。
-
-macOS/Linux 手动启动 Cloud 时，先在项目根目录完成第 1、2 步，再打开两个终端。首次运行可用下面的命令复制配置模板，再用编辑器填写自己的值；`.env` 由后端从项目根目录读取，启动命令本身不包含 Key：
+| 口径 | 结果 | 说明 |
+|---|---|---|
+| 确认批（第七份独立留出） | 正例 **6/6** + 完整必需引用链 | 产品准入签署所依据的批次 |
+| 固定检索集补充批 | 已发布答案值 **全对 10/10** | 绕过词法检索直测推理质量 |
+| 全部评测批次 | 内容错误的答案被发布 **0 次** | 链缺失一律 fail-closed 拒答 |
+| 历史基线（30 题） | 正式回答 9/30，无答案拒答 **100%** | 当前正式提示词的档位 |
 
-```bash
-cp .env.example .env
-```
+三条口径说明，因为它们决定了上面的数字能说明什么、不能说明什么：
 
-终端 1 — Cloud backend：
+**第一，评测集是冻结的，且不与历史数字混比。** 当前黄金集 80 题（64 可回答 + 16 无答案），版本冻结后才用于评测。早期 30 题保留作历史回滚证据，但两者不能直接比较。
 
-```bash
-cd backend
-APP_RUNTIME_MODE=cloud \
-SOURCE_DOCUMENTS_DIR=../demo/documents \
-DEMO_QUESTIONS_PATH=../demo/questions.json \
-PRIVATE_DATA_DIR=../data/runtime/cloud/private \
-QDRANT_PATH=../data/runtime/cloud/qdrant \
-SQLITE_PATH=../data/runtime/cloud/app.sqlite3 \
-HOST=127.0.0.1 PORT=8000 \
-.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
+**第二，准入用"值匹配"而不是"逐字匹配"。** 金标里的关键值（含中文数字与单位）必须出现在答案中才算对，逐字覆盖口径保留为诊断。原因是逐字口径会把"24 学时"和"二十四学时"判成两个答案，噪声盖过信号。
 
-终端 2 — Cloud frontend：
+**第三，把推理质量和检索噪声分开测。** 固定检索集补充批的做法是绕过检索、直接把金标必需证据注入——这样测的是"证据都给它了，它能不能正确串起来"，而不是"它能不能检索到"。两种失败原因不同，混在一起测就不知道改进该往哪儿使劲。
 
-```bash
-cd frontend
-npm run dev -- --host 127.0.0.1 --port 5173
-```
+9 份独立留出批里有 1 份因为夹具缺陷作废，我在记录里完整披露了原因，没有从分母里悄悄拿掉。
 
-Cloud 也只绑定本机地址；分别在两个终端使用 `Ctrl+C` 停止。若任一 Provider 显示 `missing`，后端会在启动前 fail closed，不会自动回到 Demo，也不会由文档命令发起调用。
+---
 
-三期集中服务启动前可运行配置预检（零网络、不会读取资料正文）：
+## 07 · 工程质量
 
-```powershell
-backend\.venv\Scripts\python.exe scripts\phase3_deployment_preflight.py
-```
+- **3785 项后端测试通过**，覆盖后端、前端、Demo Provider、SSE、会话与安全边界；每个任务走 RED → GREEN → 回归；
+- **CI 连续 9 次全绿**，每次推送执行治理契约检查、静态检查、全量测试、前端构建、Demo 冒烟与公开发布校验；
+- **文档即合同**：本页的章节顺序、公开链接与能力边界叙述由可执行契约测试逐条检查，防止文档跑在实现前面；
+- **哈希链审计**：管理员操作写追加式日志并做链校验，写审计失败时按 fail-closed 拒绝该操作；
+- **安全加固**：登录防爆破（失败滑动窗口锁定）、口令强度策略、按用户问答限速、观测数据按保留天数清理；
+- **全角色模拟 UAT** 在本机合成环境执行，暴露的"源目录扫描会停用已发布文档"缺陷已修复并补测试。
 
-预检会阻断缺少 Cloud 必需 Key、非安全 Qdrant Server 端点和非法路径配置；报告不包含 Key 或资料内容。
+---
 
-前端没有 Key 输入框，也不会从 health、SSE、localStorage、构建产物或日志取得 Key。缺少必需配置时，Cloud 在启动前以不含敏感值的错误失败，绝不自动切到 Demo、其他账户或收费模型。Cloud 请求只使用公开的四份虚构资料，费用和配额由运行者自己承担。
+## 08 · 演进路径
 
-## 已实现功能
+**先把"不胡说"做到极致，再谈"能答更多"。** 这是这个项目唯一不打算妥协的顺序。
 
-**🧱 知识工程**
+- **内容侧**：扩大冻结题集覆盖面，把多跳证据链从制度类问答推进到跨手册的流程类问答；
+- **评测侧**：把人工抽检引入常规回路，用少量高价值样本校准自动指标，避免指标自我循环；
+- **能力侧**：登录与角色授权、多知识域与可见范围、多用户部署——这些是 v2 的方向，方向不等于承诺；
+- **不做的**：在证据链稳定性没有进一步验证之前，不做面向公众的开放问答，也不把含 OCR 的多媒体资料纳入正式链路。
 
-- PDF/DOCX 的安全解析、资源上限、内容哈希和增量版本索引；
-- SQLite 文档版本、会话、消息、引用和反馈持久化；Qdrant Local 保存向量；
-- Task15 的 Docling/Legacy 隔离 staging、可定位切片 manifest 与混合检索实验记录（8 册 `2026-standard-manual-v1` 保留 1,114 个 chunk identity，1,114/1,114 可定位）。
+---
 
-**🔎 检索与证据**
+## 09 · 边界
 
-- active version 过滤、最多 20 条召回、去重、最多 6 条 Reranker 结果和 `0.35` 相关性门；
-- **多跳证据闭包**：从指向型引用推导跨文档必达清单，自引用不计边，缺失闭包即拒答；
-- **重排保留席位**：闭包必需证据被 top-6 截断挤出时按最低分替换回场，首跳噪声不吞噬链尾；
-- **证据充分性门**：纯导航/否定转述句不计入主题覆盖，缺失必填项或只剩导航证据都 fail closed。
+- 公开 Demo 使用完全虚构的资料，**不代表真实医疗制度、医保规则或诊疗建议**；
+- 这是一个面向工程实践与作品展示的项目，**不构成医学准确率认证，也不替代专业人员判断**；
+- 本页不含源代码、真实资料、私有评测题、数据库、向量库、日志或本机路径；文中数字为聚合口径，取自最近一轮内部评测，可能滞后于当前主干；
+- 发现本页存在疑似凭据或身份信息泄露时，请通过 Issues 告知，我会立即核查。
 
-**🛡️ 答案安全**
-
-- `retrieving → reranking → generating → validating` 阶段状态与 SSE 问答；
-- 结构化 `refused`/`answer` 答案合同，答案先完整缓冲，引用集合通过后才显示；
-- **逐 claim 核验器**：对答案的每条断言回查证据，合成句与跨文档引用单独指引；失败按固定类别分类（timeout / schema_invalid / unsupported_claim / coverage 等）并进入私有观测；
-- 缺证据、模型拒答、Provider 不可用、答案不可核验等固定 reason code；
-- 连续会话、追问改写、历史恢复、正式答案与未核验通用参考分栏。
-
-**🏛️ 治理与可审计**
-
-- 登录防爆破（失败滑动窗口锁定）、口令强度策略与按用户问答限速（固定 `RATE_LIMITED` reason code）；
-- 管理员操作审计：哈希链 JSONL 追加日志、账号与资料审核发布操作埋点、只读查询 API 和带链校验徽章的查看页，写审计失败时操作按 fail-closed 拒绝；
-- 请求观测按保留天数自动清理，会话消息热路径索引随 schema 初始化建立；
-- 白名单式公开导出边界，独立公开副本不携带真实资料、数据库、日志、Key 或内部执行记录；
-- 显式 Demo/Cloud 健康状态，以及不泄露凭据的 Windows 启动、停止和 Demo smoke 脚本；
-- 确定性 Demo Provider：本地 1024 维向量、词法重排、登记场景匹配和安全拒答；
-- 2A 开发验收用的受控 AgentWorkflow 合同、Router、预算 transport、baseline fallback 和零出网预检；默认产品请求仍走单一 RAG 编排，未将实验自动升级为正式能力。
-
-## 系统架构
-
-```mermaid
-flowchart LR
-    subgraph SG1["资料接入"]
-        A["PDF/DOCX"] --> B["安全解析 + SourceRef 定位"]
-        B --> C["Chunk + 内容哈希"]
-    end
-    C --> D[("SQLite<br/>版本·会话·引用·反馈")]
-    C --> E["Embedding"]
-    E --> F[("Qdrant<br/>向量 + active version")]
-
-    subgraph SG2["问答链路"]
-        Q["用户问题"] --> G["清理 + 追问改写"]
-        G --> H["向量召回 ≤20"]
-        H --> I["去重"]
-        I --> J["Reranker ≤6"]
-        J --> K["相关性门 0.35"]
-        K --> L["证据闭包 + 充分性门"]
-        L --> M["DeepSeek / Demo Provider"]
-        M --> N["逐 claim 核验 + 引用集合校验"]
-    end
-    F -.-> H
-    N -->|全部通过| O["SSE 结构化答案 + 可定位引用"]
-    N -->|任一失败| P["固定 reason code 拒答"]
-    O --> D
-```
-
-模块职责、事件边界和存储关系见 [系统架构说明](docs/architecture.md)。公开导出、演示和文档职责见 [Demo 指南](docs/demo-guide.md) 与 [项目案例](docs/project-case-study.md)。
-
-## 一个问题的数据旅程
-
-以公开 Demo 的培训问题为例：
-
-1. `IngestionService` 只读取配置目录中的一层 PDF/DOCX，先做路径、大小和文件类型检查；
-2. 提取器产生带文件名、标题层级和页码/段落位置的 `SourceRef`，Chunker 保留这些位置；
-3. Embedding 写入 Qdrant Local，SQLite 记录文件哈希和版本状态；只有 active version 参与召回；
-4. 用户问题先经过长度和控制字符清理，再做最多 20 条召回、去重、最多 6 条重排，并要求最高分达到 `0.35`；
-5. 三期调查路径先做证据闭包推导与充分性评估，再把证据放在明确边界内送入 Demo Language Model 或 Cloud DeepSeek。Demo 只精确匹配已登记场景，不执行问题或证据里的指令；
-6. 答案在内存中完整缓冲，解析双字段 JSON，检查文本安全、来源编号和可定位引用，并逐 claim 回查证据。任一检查失败都整条拒答；
-7. 通过后才发出 `answer_delta` 和 `final` SSE 事件，并把会话、状态、引用和反馈写入 SQLite。
-
-### 最近一轮工程演进
-
-项目近期不是只"换了一个模型"，而是沿着知识、检索、回答和 Agent 四层逐步做了可回滚的实验：
-
-- **知识层（Task15）：** 8 册 `2026-standard-manual-v1` 在隔离 staging 中使用 Docling `HybridChunker` 主候选、Legacy fallback；定位修复后保留 1,114 个 chunk identity，1,114/1,114 可定位（段落 146、表格 968）。真实手册和切片正文不进入公开仓库。
-- **检索层（Task14/18）：** 生产仍是 Vector → 去重 → Reranker；staging 另做 Vector + lexical + balanced RRF（`k=60`）对照。最终 R1 的 Recall@20 `0.607→0.679`，但回答可用率 `72.5%→68.75%`、引用有效率 `77.5%→76.25%`、时延约 `2.00→2.28s`，因此只保留为实验，不自动切换。
-- **评测层（Task16/18）：** 当前黄金集固定为 `final-ai-validated-20260904-005`，80 题（64 可回答 + 16 无答案）；Task18 的 vector、hybrid、D1/F/H 结果都绑定该题集与 `RUN-20260904-004`。早期 30 题仍保留作历史回滚证据。
-- **证据链层（三期 2026-10）：** 多跳证据闭包、重排保留席位、逐 claim 核验与引用实质内容门落地并通过 9 份独立留出批评估；评测口径从逐字覆盖升级为 v2 值匹配（金标值 token 匹配，strict/canonical 保留为诊断），并新增固定检索集范式把推理质量与检索噪声分离。
-- **治理与加固（2026-10-30/31）：** 全角色模拟 UAT 暴露并修复"源目录扫描停用已发布上传文档"缺陷；随后落地登录防爆破、口令策略、问答限速、观测保留清理、`messages(session_id)` 索引与哈希链管理员审计流，并新增操作审计查看页。真实资料效果验收、发布与临床可用性仍不在其结论范围内。
-- **Agent 层（2A）：** `backend/app/agents` 实现严格 Router、预接线工作流变体、预算/超时、失败分类和 baseline fallback；历史 A/C 对照暴露了 Router 合同适配问题并已记录。它是默认关闭的开发实验，不是面向用户的运行时多 Agent。
-
-完整版本—结果—决策映射见 [评测与回滚](docs/evaluation.md)、[系统架构](docs/architecture.md) 和 [多 Agent 开发](docs/multi-agent-development.md)。
-
-## 评测与回滚
-
-公开 Demo 的可执行冒烟结果由脚本输出安全聚合值：四份 PDF/DOCX 共 8 个文件、支持问题 2 个、拒答问题 1 个、网络调用 0 次。该数字描述离线流程连通性，不是医学正确率。
-
-私有冻结评测只在本地授权环境执行，公开页面只保留聚合判断，不包含题目、答案、资料正文或逐题结果：
-
-| 配置 | 正式回答可用性 | 无答案拒答 | 结论 |
-| --- | ---: | ---: | --- |
-| 历史回滚基线/C1（30题） | 9/30（30.0%） | 100% | 历史提示词安全门基线 |
-| 历史 C2 实验（30题） | 14/30（46.7%） | 60% | 回答数增加，但低于 90% 安全门，按确认回滚 |
-
-C2 说明提示词实验的取舍：它减少了可回答问题的过度拒答，却让资料中没有答案的问题更容易被回答，安全边界退化。因此当前正式提示词恢复为 C1；C2 报告仅用于工程复盘，不构成医疗有效性、监管认证或生产可用性证明。更完整的方法和限制见 [评测说明](docs/evaluation.md)。
-
-当前 80 题评测集为 `2026-standard-manual-v1-golden-v1`（64 道可回答 + 16 道无答案），具体运行版本为 `final-ai-validated-20260904-005`；该题集已完成专业审核冻结，Task18 的当前流程评测使用它。它不能与上面的历史 30 题数字直接比较；冻结也不等于临床认证。
-
-### 三期 Harness 多跳证据链（私有评测聚合）
-
-面向"答案需要跨文档串联规范"的机构咨询场景，评测在 9 份独立留出批（1 份因夹具缺陷作废并完整披露）上执行，准入口径为 v2 值匹配——金标值 token（中文数字/单位）必须出现在答案中，strict/canonical 逐字口径保留为诊断：
-| 批次 | 关键结果 | 说明 |
-| --- | --- | --- |
-| 第七份独立留出（确认批） | 正例 **6/6** answered + 完整必需引用链 + 值匹配，安全失败 **0** | 准入签署所依据的批次 |
-| 固定检索集补充批 | 已发布答案值全对 **10/10**，安全失败 **0** | 绕过词法检索、直接注入金标必需证据，把推理质量与检索噪声分离 |
-| 全部评测批次 | 内容错误的答案被发布 **0 次** | 链缺失一律 fail-closed 拒答（固定 reason code），不产出看似合理的错误答案 |
-
-institutional 回答路径已按变更管理绑定 `evidence_complete` 回答档位并完成产品准入确认（评估与候选默认；`release=not_released`，正式发布另行变更管理；普通 RAG 路径保持原档位不变）。批次细节见[准入决定记录](docs/project/phase3/admission-decision-evidence-complete-20261031.md)、[产品准入变更单](docs/project/phase3/product-admission-change-order-20261031.md)与[范式首跑报告](docs/project/phase3/fixed-evidence-paradigm-decoy-fix-20261031.md)。这些数字来自合成留出，不构成医学准确率认证，也不能外推为真实资料上的效果。
-
-## 工程质量
-
-**工程亮点：** 用确定性 Demo 把"可复现"与"可选云端路径"拆开；用整条答案缓冲和引用集合校验把"有文本"与"有证据"拆开；用冻结评测和回滚记录把"回答更多"与"安全边界更好"拆开。
-
-- 后端、前端、Demo Provider、SSE、会话和安全边界均有自动测试；每个任务遵循 RED → GREEN → 回归；后端全量自动测试 **3700+ 项**（最近一次全量运行 3785 passed）；
-- CI 对每次推送执行治理契约检查、Ruff、后端全量测试、前端 Vitest/构建、Demo smoke 与公开发布校验，当前**连续 9 次全绿**；
-- **文档即合同**：本 README 的章节顺序、公开链接、Demo/Cloud 边界与"生产级/运行时多 Agent"越界叙述都由可执行契约测试逐条检查（`backend/tests/release/test_public_docs.py`）；
-- 全角色模拟 UAT 在本机 Demo 合成环境执行（29 项 PASS、2 项 BLOCKED、5 项外部门禁 NOT RUN），配套安全加固测试套件覆盖防爆破锁定、口令策略、限速窗口、SQL 元字符输入与观测保留清理；
-- **版本台账**：数据/Prompt/模型/代码/评测变更全部进入带 SHA-256 链的统一版本台账快照，旧版本保留、未确认状态记为未知；
-- `scripts/security_scan.py` 以私有开发工作树的 fail-closed 规则处理二进制资料；独立公开副本的安全发布门是 `scripts/validate_public_release.py`，它能核验允许的虚构 Demo 资产与历史边界，不能把源仓库扫描结果冒充公开发布通过。
-
-## 多 Agent 开发
-
-开发过程中按任务隔离规划、实现、测试、安全复核和文档交接，由项目负责人在需求、数据授权、指标判断和回滚处做决定。产品运行时当前是一个单一编排的 RAG 工作流，不在请求期间调用开发 Agent。角色、交接格式和审查证据见 [多 Agent 开发说明](docs/multi-agent-development.md)。
-
-### 2A 受控实验边界
-
-2A 是开发验收用的候选工作流实验：A 为当前基线，B 为基线加核验，C 为候选工作流；三者使用同一冻结评测集和同一指标口径。协议、预算封装、零出网预检、失败回退约束和公开导出均已完成。2026-08-31 在单独授权后完成了一次私有 A/C 对照：正式聚合记录 172 次物理调用，A 形成 21/30 个正式回答，C 形成 9/30 个正式回答，其中 C 有 16 题停在 Router 结构校验。随后已在本地加入显式 baseline 回退，并通过 999 个后端测试；结果仍需同协议复评，未自动替换正式路径，默认问答仍为 `baseline_v1`。私有逐题内容不公开，不能把这轮结果当作医疗准确率或生产安全证明。
-
-## 安全与隐私
-
-公开边界的核心规则：
-
-- 资料全部是虚构演示资料；不导出真实企业资料、私有评测题、逐题答案、数据库、向量库、日志或本机路径；
-- Demo 不读 Key、不访问外网；Cloud 只读运行者本机 `.env`，前端不接触 Provider Key；
-- health 只返回 `configured`/`missing`/`not_required` 等状态，错误和 SSE 只返回固定 reason code；
-- 服务默认绑定本机，不提供托管公网服务，不收集用户 Key；本机版本包含登录、角色访问控制、登录防爆破和管理员操作审计，但不承诺多用户隔离、公网部署或生产运维；
-- 发布前使用白名单生成独立副本，再进行工作树和完整 Git 历史检查。
-
-详细报告方式和不在范围内的承诺见 [SECURITY.md](SECURITY.md)。
-
-## 技术决策
-
-v1 选择 SQLite + Qdrant Local，换取本机可复现、低运维和不依赖外部服务；Provider 通过最小 Protocol 隔离 Demo 与 Cloud；结构化答案和整条引用门优先于"尽量给出回答"。这些决策的代价、替代方案和回滚记录见 [工程决策](docs/engineering-decisions.md)。
-
-## 当前限制
-
-- v1 的四份资料和问题均为原创虚构演示，不可用于真实制度、医保、诊疗、处方或患者决策；
-- 无登录、角色授权、ACL、患者端、审计后台或公网部署；本机 local storage 不是多用户安全边界；
-- Demo 的 OCR 不伪造图片识别结果；Cloud OCR/模型调用需要运行者自己的 Key、网络和费用；
-- 引用门证明来源结构和定位，不等于模型答案在语义上或医学上正确；公开 Demo 不提供临床决策支持；
-- 多跳证据链的评测数字来自合成留出与固定检索集范式，链完成率受夹具词法方差影响（已用范式设计应对），不能与真实资料效果混同；
-- MySQL、Qdrant Server、面向用户的运行时多 Agent、多知识域和公网部署仍属于 v2.0；仓库已包含默认关闭的 2A AgentWorkflow 评测实现，但不把它当作正式运行时能力；
-- 远程仓库、CI、Git tag 和 GitHub Release 的状态必须逐项核验；本地专业化整理完成前，不把任何远程状态或徽章写成既成事实。
-
-## v2.0 路线
-
-v2.0 只记录候选方向，不暗示已实现：登录与 ACL、患者科普边界、多知识域与可见范围、MySQL/Qdrant Server/审计、多用户部署、运行时路由与专业审查、人工评测和成本观测。分栏路线图见 [ROADMAP.md](ROADMAP.md)。
+---
 
 ## License
 
-公开副本采用 [MIT License](LICENSE)，仅覆盖独立公开仓库中实际发布的脱敏代码、虚构资料和公开文档；真实资料、私有评测、私人手册和未导出的开发资产不属于该许可范围。
+MIT。
