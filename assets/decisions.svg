@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 446" width="1200" height="446" role="img" aria-label="三次未上线的实验">
+  <defs>
+    <linearGradient id="dbg3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#090F1C"/>
+      <stop offset="100%" stop-color="#0B1524"/>
+    </linearGradient>
+    <linearGradient id="dcard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#101E30"/>
+      <stop offset="100%" stop-color="#0C1626"/>
+    </linearGradient>
+    <linearGradient id="dstop" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3A1622" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#25101A" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="446" fill="url(#dbg3)"/>
+  <g font-family="'Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif">
+    <text x="40" y="48" fill="#64748B" font-size="13" letter-spacing="2.6">DECISIONS THAT COST ME</text>
+    <text x="40" y="88" fill="#E2E8F0" font-size="27" font-weight="700">三次实验把指标做上去了，我都选择了不上线</text>
+
+    <!-- 卡 1 -->
+    <g>
+      <rect x="40" y="110" width="368" height="286" rx="14" fill="url(#dcard)" stroke="#25384F"/>
+      <text x="62" y="144" fill="#E2E8F0" font-size="16" font-weight="600">混合检索（向量 + 词法 RRF）</text>
+      <text x="62" y="167" fill="#5B6B80" font-size="12">召回率涨了，但答得更差了</text>
+      <line x1="62" y1="182" x2="386" y2="182" stroke="#1E2D40"/>
+
+      <text x="62" y="208" fill="#6EE7B7" font-size="13">↑ 召回率 Recall@20</text>
+      <text x="386" y="208" fill="#6EE7B7" font-size="13" text-anchor="end">0.607 → 0.679</text>
+
+      <text x="62" y="234" fill="#FCA5A5" font-size="13">↓ 回答可用率</text>
+      <text x="386" y="234" fill="#FCA5A5" font-size="13" text-anchor="end">72.50% → 68.75%</text>
+
+      <text x="62" y="260" fill="#FCA5A5" font-size="13">↓ 引用有效率 · 时延</text>
+      <text x="386" y="260" fill="#FCA5A5" font-size="13" text-anchor="end">77.5%→76.25% · 2.0→2.3s</text>
+
+      <rect x="62" y="292" width="324" height="46" rx="8" fill="url(#dstop)" stroke="#F87171" stroke-opacity="0.35"/>
+      <text x="78" y="312" fill="#FCA5A5" font-size="13">✗ 只留作实验，不切换正式路径</text>
+      <text x="78" y="330" fill="#8A5560" font-size="11.5">召回更多不等于回答更好，噪声被一起捞进来了</text>
+    </g>
+
+    <!-- 卡 2 -->
+    <g>
+      <rect x="430" y="110" width="368" height="286" rx="14" fill="url(#dcard)" stroke="#25384F"/>
+      <text x="452" y="144" fill="#E2E8F0" font-size="16" font-weight="600">放宽提示词</text>
+      <text x="452" y="167" fill="#5B6B80" font-size="12">多答了 5 题，代价是敢编了</text>
+      <line x1="452" y1="182" x2="776" y2="182" stroke="#1E2D40"/>
+
+      <text x="452" y="208" fill="#6EE7B7" font-size="13">↑ 正式回答数（30 题）</text>
+      <text x="776" y="208" fill="#6EE7B7" font-size="13" text-anchor="end">9 → 14</text>
+
+      <text x="452" y="234" fill="#FCA5A5" font-size="13">↓ 无答案问题拒答率</text>
+      <text x="776" y="234" fill="#FCA5A5" font-size="13" text-anchor="end">100% → 60%</text>
+
+      <text x="452" y="260" fill="#5B6B80" font-size="13">等于用"敢胡说"换"多答几题"</text>
+
+      <rect x="452" y="292" width="324" height="46" rx="8" fill="url(#dstop)" stroke="#F87171" stroke-opacity="0.35"/>
+      <text x="468" y="312" fill="#FCA5A5" font-size="13">✗ 回滚到原来的提示词</text>
+      <text x="468" y="330" fill="#8A5560" font-size="11.5">医疗场景不接受这个交换，安全边界不能拿来换数量</text>
+    </g>
+
+    <!-- 卡 3 -->
+    <g>
+      <rect x="820" y="110" width="340" height="286" rx="14" fill="url(#dcard)" stroke="#25384F"/>
+      <text x="842" y="144" fill="#E2E8F0" font-size="16" font-weight="600">多 Agent 工作流</text>
+      <text x="842" y="167" fill="#5B6B80" font-size="12">架构更漂亮，稳定性掉下来</text>
+      <line x1="842" y1="182" x2="1138" y2="182" stroke="#1E2D40"/>
+
+      <text x="842" y="208" fill="#FCA5A5" font-size="13">↓ 正式回答数（30 题）</text>
+      <text x="1138" y="208" fill="#FCA5A5" font-size="13" text-anchor="end">21 → 9</text>
+
+      <text x="842" y="234" fill="#FCA5A5" font-size="13">✗ 16 题卡在结构校验</text>
+      <text x="1138" y="234" fill="#6B7A8C" font-size="12" text-anchor="end">172 次物理调用</text>
+
+      <text x="842" y="260" fill="#5B6B80" font-size="13">环节越多，失败点越多</text>
+
+      <rect x="842" y="292" width="296" height="46" rx="8" fill="url(#dstop)" stroke="#F87171" stroke-opacity="0.35"/>
+      <text x="858" y="312" fill="#FCA5A5" font-size="13">✗ 默认关闭，不进运行时</text>
+      <text x="858" y="330" fill="#8A5560" font-size="11.5">保留为开发期实验，并加了显式回退</text>
+    </g>
+
+    <text x="40" y="432" fill="#7A8A9C" font-size="12.5">判断标准只有一条：如果一个改动要用"用户更可能看到没依据的内容"来换，它就不上线，哪怕指标更好看。</text>
+  </g>
+</svg>

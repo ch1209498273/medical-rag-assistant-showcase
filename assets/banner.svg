@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-label="医疗知识问答助手">
+  <defs>
+    <linearGradient id="rbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#070D1A"/>
+      <stop offset="55%" stop-color="#0C1A30"/>
+      <stop offset="100%" stop-color="#0A1526"/>
+    </linearGradient>
+    <radialGradient id="rglowA" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.40"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rglowB" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34D399" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#34D399" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#A78BFA" stop-opacity="0.15"/>
+    </linearGradient>
+    <linearGradient id="rcard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#122740"/>
+      <stop offset="100%" stop-color="#0C1B2D"/>
+    </linearGradient>
+    <pattern id="rdots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1.2" cy="1.2" r="1.2" fill="#FFFFFF" fill-opacity="0.05"/>
+    </pattern>
+    <marker id="rar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#38BDF8" fill-opacity="0.85"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="440" fill="url(#rbg)"/>
+  <rect width="1200" height="440" fill="url(#rdots)"/>
+  <ellipse cx="980" cy="150" rx="240" ry="190" fill="url(#rglowA)"/>
+  <ellipse cx="1010" cy="360" rx="200" ry="140" fill="url(#rglowB)"/>
+
+  <!-- 右侧：文档 → 证据 → 答案 / 拒答 -->
+  <g>
+    <!-- 文档堆 -->
+    <g opacity="0.95">
+      <rect x="820" y="150" width="76" height="96" rx="7" fill="url(#rcard)" stroke="#38BDF8" stroke-opacity="0.45"/>
+      <rect x="834" y="140" width="76" height="96" rx="7" fill="url(#rcard)" stroke="#38BDF8" stroke-opacity="0.6"/>
+      <rect x="848" y="130" width="76" height="96" rx="7" fill="url(#rcard)" stroke="#22D3EE" stroke-opacity="0.85"/>
+      <line x1="862" y1="154" x2="900" y2="154" stroke="#67E8F9" stroke-width="2" stroke-opacity="0.7"/>
+      <line x1="862" y1="168" x2="908" y2="168" stroke="#67E8F9" stroke-width="2" stroke-opacity="0.5"/>
+      <line x1="862" y1="182" x2="892" y2="182" stroke="#67E8F9" stroke-width="2" stroke-opacity="0.5"/>
+      <line x1="862" y1="196" x2="902" y2="196" stroke="#67E8F9" stroke-width="2" stroke-opacity="0.5"/>
+    </g>
+
+    <line x1="934" y1="178" x2="1000" y2="178" stroke="#38BDF8" stroke-width="1.8" stroke-opacity="0.7" marker-end="url(#rar)"/>
+    <text x="967" y="166" fill="#5B7A96" font-size="11" text-anchor="middle">召回 · 重排</text>
+
+    <!-- 答案卡 -->
+    <rect x="1012" y="96" width="164" height="112" rx="11" fill="#0E2437" stroke="#34D399" stroke-opacity="0.7"/>
+    <text x="1094" y="122" fill="#6EE7B7" font-size="12" text-anchor="middle">答案 + 引用</text>
+    <line x1="1030" y1="136" x2="1158" y2="136" stroke="#34D399" stroke-width="2" stroke-opacity="0.35"/>
+    <line x1="1030" y1="152" x2="1158" y2="152" stroke="#34D399" stroke-width="2" stroke-opacity="0.25"/>
+    <line x1="1030" y1="168" x2="1130" y2="168" stroke="#34D399" stroke-width="2" stroke-opacity="0.25"/>
+    <text x="1094" y="194" fill="#3F7C63" font-size="11" text-anchor="middle">每条断言可回查</text>
+
+    <!-- 拒答卡 -->
+    <rect x="1012" y="248" width="164" height="94" rx="11" fill="#2A1720" stroke="#F87171" stroke-opacity="0.65"/>
+    <text x="1094" y="278" fill="#FCA5A5" font-size="12" text-anchor="middle">证据不足 · 拒答</text>
+    <text x="1094" y="302" fill="#9C5B66" font-size="11" text-anchor="middle">不生成看似合理的答案</text>
+    <text x="1094" y="322" fill="#7A4650" font-size="10.5" text-anchor="middle">固定 reason code</text>
+
+    <path d="M1002 210 C 1010 226, 1010 240, 1014 250" fill="none" stroke="#F87171" stroke-width="1.6" stroke-opacity="0.7"/>
+  </g>
+
+  <!-- 左侧文案 -->
+  <g font-family="'Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif">
+    <rect x="72" y="62" width="336" height="30" rx="15" fill="#38BDF8" fill-opacity="0.10" stroke="#38BDF8" stroke-opacity="0.35"/>
+    <text x="92" y="82" fill="#7DD3FC" font-size="13" letter-spacing="2.2">EVIDENCE-GROUNDED RAG</text>
+
+    <text x="70" y="172" fill="#F1F5F9" font-size="50" font-weight="700" letter-spacing="1">医疗知识问答助手</text>
+    <text x="72" y="222" fill="#94A3B8" font-size="20" letter-spacing="0.5">让医护培训资料的问答结果可定位、可拒答、可复现</text>
+
+    <line x1="72" y1="256" x2="248" y2="256" stroke="url(#rline)" stroke-width="2"/>
+
+    <text x="72" y="296" fill="#CBD5E1" font-size="16">大多数 RAG 的问题不是答不出来，</text>
+    <text x="72" y="326" fill="#E2E8F0" font-size="16" font-weight="600">是答得太像真的。</text>
+    <text x="72" y="364" fill="#8FA3B8" font-size="14">它宁可说"没找到依据"，也不编一段听起来合理的话。</text>
+  </g>
+</svg>

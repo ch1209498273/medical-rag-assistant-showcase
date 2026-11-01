@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 46" width="1120" height="46" role="img" aria-label="项目状态徽章">
+  <g font-family="'Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif" font-size="13">
+    <rect x="0" y="6" width="190" height="32" rx="16" fill="#0E2036" stroke="#34D399" stroke-opacity="0.55"/>
+    <circle cx="21" cy="22" r="4" fill="#34D399"/>
+    <text x="34" y="27" fill="#6EE7B7">证据不足即拒答</text>
+
+    <rect x="214" y="6" width="170" height="32" rx="16" fill="#0E2036" stroke="#38BDF8" stroke-opacity="0.35"/>
+    <text x="299" y="27" fill="#CBD5E1" text-anchor="middle">0 错误答案发布</text>
+
+    <rect x="408" y="6" width="160" height="32" rx="16" fill="#0E2036" stroke="#38BDF8" stroke-opacity="0.35"/>
+    <text x="488" y="27" fill="#CBD5E1" text-anchor="middle">3785 测试全绿</text>
+
+    <rect x="592" y="6" width="160" height="32" rx="16" fill="#0E2036" stroke="#38BDF8" stroke-opacity="0.35"/>
+    <text x="672" y="27" fill="#CBD5E1" text-anchor="middle">80 题冻结评测</text>
+
+    <rect x="776" y="6" width="190" height="32" rx="16" fill="#0E2036" stroke="#38BDF8" stroke-opacity="0.35"/>
+    <text x="871" y="27" fill="#CBD5E1" text-anchor="middle">本地优先 · 双模式</text>
+
+    <rect x="990" y="6" width="130" height="32" rx="16" fill="#0E2036" stroke="#38BDF8" stroke-opacity="0.35"/>
+    <text x="1055" y="27" fill="#CBD5E1" text-anchor="middle">MIT</text>
+  </g>
+</svg>
