@@ -1,0 +1,12 @@
+{"id": "C-01", "question": "新员工独立值班前需要完成多少学时的岗前培训？", "kind": "answerable", "scene": "通用", "gold": {"key_values": ["24 学时"], "required_fragment_ids": ["F-001"]}}
+{"id": "C-02", "question": "岗前培训考核不合格了怎么办？", "kind": "answerable", "scene": "通用", "gold": {"key_values": ["7 日"], "required_fragment_ids": ["F-002"]}}
+{"id": "C-03", "question": "维持性血液透析患者单次透析的 Kt/V 应不低于多少？", "kind": "answerable", "scene": "通用", "gold": {"key_values": ["1.2"], "required_fragment_ids": ["F-004"]}}
+{"id": "C-04", "question": "自体动静脉内瘘术后多久才能成熟使用？", "kind": "answerable", "scene": "通用", "gold": {"key_values": ["6～8 周"], "required_fragment_ids": ["F-005"]}}
+{"id": "C-05", "question": "透析中患者发生低血压应当如何处置？", "kind": "answerable", "scene": "透析中", "gold": {"key_values": ["调低血泵流速", "暂停超滤"], "required_fragment_ids": ["F-006"]}}
+{"id": "C-06", "question": "新员工独立值班的前提是什么？在岗人员年度培训学时又是多少？", "kind": "answerable", "scene": "通用", "gold": {"key_values": ["24 学时", "72 学时"], "required_fragment_ids": ["F-001", "F-009"]}}
+{"id": "C-07", "question": "两次透析之间体重增长应该控制在什么范围？", "kind": "answerable", "scene": "通用", "gold": {"key_values": ["5%"], "required_fragment_ids": ["F-008"]}}
+{"id": "C-08", "question": "透析中低血压缓解之后还需要做什么？", "kind": "answerable", "scene": "透析后", "gold": {"key_values": ["评估超滤量"], "required_fragment_ids": ["F-006"]}}
+{"id": "C-09", "question": "内瘘术后 24 小时内应该观察什么？", "kind": "answerable", "scene": "通用", "gold": {"key_values": ["震颤", "搏动"], "required_fragment_ids": ["F-005"]}}
+{"id": "C-10", "question": "血液透析的费用报销比例是多少？", "kind": "no_answer", "scene": "通用", "gold": {}}
+{"id": "C-11", "question": "水处理系统的反渗膜多长时间更换一次？", "kind": "no_answer", "scene": "通用", "gold": {}}
+{"id": "C-12", "question": "透析患者的运动康复方案应该怎么制定？", "kind": "no_answer", "scene": "通用", "gold": {}}

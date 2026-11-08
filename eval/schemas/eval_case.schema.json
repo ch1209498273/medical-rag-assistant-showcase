@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "评测用例结构契约（冻结评测集字段约定 · 脱敏参考）",
+  "description": "黄金集 80 题 = 64 可答 + 16 无答案。冻结后才用于评测；版本变更即换版本号，不与历史数字混比。",
+  "type": "object",
+  "required": ["id", "question", "kind"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "用例编号，如 C-01，冻结后不可变"
+    },
+    "question": {
+      "type": "string",
+      "description": "评测问题原文"
+    },
+    "kind": {
+      "enum": ["answerable", "no_answer"],
+      "description": "无答案题用于检验拒答能力：该拒的时候拒了，才算过关"
+    },
+    "scene": {
+      "enum": ["透析前", "透析中", "透析后", "通用"],
+      "description": "用户已确立的场景，追问改写不得丢失"
+    },
+    "gold": {
+      "type": "object",
+      "description": "kind=answerable 时的金标；no_answer 时为空对象",
+      "properties": {
+        "key_values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "准入口径：关键值（含中文数字与单位）必须出现在答案文本中"
+        },
+        "required_fragment_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "证据闭包必达清单：多跳问题指向的必需切片，缺任何一项整条拒答"
+        }
+      }
+    }
+  }
+}

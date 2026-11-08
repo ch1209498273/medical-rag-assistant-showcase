@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "结构化答案合同（脱敏参考）",
+  "description": "只有 answer 和 refused 两种形态，没有\"大概是吧\"这种中间态。校验通过才发第一个字。",
+  "oneOf": [
+    {
+      "type": "object",
+      "title": "answer 形态",
+      "required": ["result", "answer"],
+      "properties": {
+        "result": { "const": "answer" },
+        "latency_ms": { "type": "number" },
+        "usage": {
+          "type": "object",
+          "properties": {
+            "calls": { "type": "integer", "minimum": 1 },
+            "prompt_tokens": { "type": "integer" },
+            "completion_tokens": { "type": "integer" }
+          }
+        },
+        "answer": {
+          "type": "object",
+          "required": ["claims"],
+          "properties": {
+            "claims": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["text", "citations"],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "单个断言：答案拆到句子级，逐条回查证据"
+                  },
+                  "citations": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "断言的依据；无引用的断言一律无支撑",
+                    "items": {
+                      "type": "object",
+                      "required": ["fragment_id", "quote"],
+                      "properties": {
+                        "fragment_id": {
+                          "type": "string",
+                          "description": "指向切片，可定位到 文件名+章节+页码"
+                        },
+                        "quote": {
+                          "type": "string",
+                          "description": "逐字引用：去空白后必须是切片原文的子串，否则引用断裂"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "title": "refused 形态",
+      "required": ["result", "reason_code"],
+      "properties": {
+        "result": { "const": "refused" },
+        "reason_code": {
+          "enum": ["TIMEOUT", "STRUCTURE_INVALID", "UNSUPPORTED_CLAIM", "INSUFFICIENT_COVERAGE", "OUT_OF_SCOPE"],
+          "description": "固定原因码：失败归因到固定类别，不给人一段含糊的解释"
+        },
+        "refusal": {
+          "type": "object",
+          "properties": {
+            "message": { "type": "string" }
+          }
+        }
+      }
+    }
+  ]
+}
