@@ -14,9 +14,11 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
+from scope_gate import classify_request
 from verify_claims import REASON_OUT_OF_SCOPE, load_fragments, normalize, verify_answer
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -40,6 +42,26 @@ def run_eval() -> Dict[str, Any]:
 
     answerable = {cid: c for cid, c in cases.items() if c["kind"] == "answerable"}
     no_answer = {cid: c for cid, c in cases.items() if c["kind"] == "no_answer"}
+    boundary = {cid: c for cid, c in cases.items() if c["kind"] == "boundary"}
+
+    # 闸门⓪：越界请求在生成前拦下，不进入答案链路。
+    boundary_hits: List[str] = []
+    boundary_missed: List[Dict[str, Any]] = []
+    for cid, case in boundary.items():
+        expected = case.get("expected_reason")
+        got = classify_request(case["question"])
+        if got == expected:
+            boundary_hits.append(cid)
+        else:
+            boundary_missed.append({"case_id": cid, "expected": expected, "got": got})
+
+    # 反向检查：可答题与无答案题都不得被判为越界。
+    # 越界（不该答）与无答案（资料里没有）是两种不同的拒答，原因码不同。
+    boundary_false_positive = sorted(
+        cid
+        for cid, case in {**answerable, **no_answer}.items()
+        if classify_request(case["question"]) is not None
+    )
 
     published: List[Dict[str, Any]] = []
     refused: List[Dict[str, Any]] = []
@@ -50,7 +72,8 @@ def run_eval() -> Dict[str, Any]:
     missing_cases: List[str] = []
 
     answered_ids = {rec["case_id"] for rec in answers}
-    missing_cases = sorted(set(cases) - answered_ids)
+    # 越界请求在生成前已被闸门⓪拦下，本来就不该有 answer 记录。
+    missing_cases = sorted((set(cases) - answered_ids) - set(boundary))
 
     for rec in answers:
         case = cases[rec["case_id"]]
@@ -82,7 +105,15 @@ def run_eval() -> Dict[str, Any]:
     n_ans, n_no = len(answerable), len(no_answer)
     report = {
         "note": "脱敏参考实现的演示指标，基于合成样例，不代表生产系统评测结果",
-        "sample_size": {"answerable": n_ans, "no_answer": n_no},
+        "sample_size": {
+            "answerable": n_ans,
+            "no_answer": n_no,
+            "boundary": len(boundary),
+        },
+        "boundary_refusal_rate": f"{len(boundary_hits)}/{len(boundary)}",
+        "boundary_false_positive": len(boundary_false_positive),
+        "boundary_missed": boundary_missed,
+        "boundary_false_positive_cases": boundary_false_positive,
         "answer_rate_published": f"{len(published)}/{n_ans}",
         "no_answer_refusal_rate": f"{sum(1 for r in refused if r['case_id'] in no_answer)}/{n_no}",
         "citation_grounding_rate": f"{grounded_citations}/{total_citations}",
@@ -106,10 +137,21 @@ def main() -> None:
     print(f"引用逐字命中          {report['citation_grounding_rate']}")
     print(f"值匹配准入            {report['value_match_admission']}")
     print(f"内容错误答案发布      {report['wrong_answer_published']} 次")
+    print(f"越界请求拦截          {report['boundary_refusal_rate']}")
+    print(f"越界误伤正常题        {report['boundary_false_positive']} 题")
     print("-" * 56)
     for r in report["refused_detail"]:
         print(f"  拒答 {r['case_id']:<8} 固定原因码: {r['reason_code']}")
+    for miss in report["boundary_missed"]:
+        print(f"  漏拦 {miss['case_id']:<8} 期望 {miss['expected']}，实得 {miss['got']}")
+
+    blocked, total = report["boundary_refusal_rate"].split("/")
+    gates_ok = blocked == total and report["boundary_false_positive"] == 0 and report["wrong_answer_published"] == 0
+    print("-" * 56)
+    print(f"边界验收              {'PASS' if gates_ok else 'FAIL'}")
     print(f"\n明细已写入 {REPORT_PATH.name}")
+    if not gates_ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

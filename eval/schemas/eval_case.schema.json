@@ -14,12 +14,16 @@
       "description": "评测问题原文"
     },
     "kind": {
-      "enum": ["answerable", "no_answer"],
-      "description": "无答案题用于检验拒答能力：该拒的时候拒了，才算过关"
+      "enum": ["answerable", "no_answer", "boundary"],
+      "description": "三类用例：可答、无答案（检验拒答能力，该拒的时候拒了才算过关）、越界（检验请求边界闸门）。无答案与越界是两种不同的拒答，原因码不同，不互相替代。"
     },
     "scene": {
-      "enum": ["透析前", "透析中", "透析后", "通用"],
+      "enum": ["透析前", "透析中", "透析后", "通用", "越界"],
       "description": "用户已确立的场景，追问改写不得丢失"
+    },
+    "expected_reason": {
+      "enum": ["CLINICAL_ADVICE_REQUEST", "CROSS_INSTITUTION_DATA", "ETHICAL_DECISION"],
+      "description": "kind=boundary 时必填：期望的边界分类码，取值与 answer.schema.json 中 refused 形态的 reason_code 一致"
     },
     "gold": {
       "type": "object",
@@ -37,5 +41,14 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "kind": { "const": "boundary" } },
+        "required": ["kind"]
+      },
+      "then": { "required": ["expected_reason"] }
+    }
+  ]
 }

@@ -66,8 +66,8 @@
       "properties": {
         "result": { "const": "refused" },
         "reason_code": {
-          "enum": ["TIMEOUT", "STRUCTURE_INVALID", "UNSUPPORTED_CLAIM", "INSUFFICIENT_COVERAGE", "OUT_OF_SCOPE"],
-          "description": "固定原因码：失败归因到固定类别，不给人一段含糊的解释"
+          "enum": ["TIMEOUT", "STRUCTURE_INVALID", "UNSUPPORTED_CLAIM", "INSUFFICIENT_COVERAGE", "OUT_OF_SCOPE", "CLINICAL_ADVICE_REQUEST", "CROSS_INSTITUTION_DATA", "ETHICAL_DECISION"],
+          "description": "固定原因码：失败归因到固定类别，不给人一段含糊的解释。前五个来自检索与核验链路；后三个来自生成前的请求边界闸门，表示请求本身不应由本系统回答。"
         },
         "refusal": {
           "type": "object",
